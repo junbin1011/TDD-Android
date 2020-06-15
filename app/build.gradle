@@ -1,0 +1,175 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-kapt'
+apply plugin: "jacoco"
+apply plugin: "org.sonarqube"
+apply plugin: "io.gitlab.arturbosch.detekt"
+
+jacoco {
+    toolVersion = "0.8.5" //代码覆盖库jacoco版本号
+}
+
+android {
+    compileSdkVersion 29
+    buildToolsVersion "29.0.3"
+
+    defaultConfig {
+        applicationId "com.cac.app"
+        minSdkVersion 21
+        targetSdkVersion 29
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    dataBinding {
+        enabled = true
+    }
+
+    buildTypes {
+        debug {
+            testCoverageEnabled = true
+            minifyEnabled false
+        }
+        release {
+            testCoverageEnabled = true
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+}
+
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation 'androidx.appcompat:appcompat:1.1.0'
+    implementation 'androidx.core:core-ktx:1.3.0'
+    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+    implementation "com.google.android.material:material:1.1.0"
+    // Architecture Components
+    implementation "androidx.room:room-runtime:2.2.5"
+    implementation "androidx.room:room-ktx:2.2.5"
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.2.0'
+    kapt "androidx.room:room-compiler:2.2.5"
+    implementation "androidx.lifecycle:lifecycle-extensions:2.2.0"
+    kapt "androidx.lifecycle:lifecycle-common-java8:2.2.0"
+    //Image
+    implementation 'com.github.bumptech.glide:glide:4.10.0'
+    //Net
+    implementation 'com.squareup.retrofit2:retrofit:2.7.1'
+    implementation 'com.squareup.retrofit2:converter-gson:2.7.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.3.1'
+    //Thread
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.3'
+    //Test
+    testImplementation 'com.squareup.okhttp3:mockwebserver:4.7.2'
+    testImplementation 'junit:junit:4.13'
+    testImplementation "org.mockito:mockito-core:2.25.0"
+    testImplementation "org.hamcrest:hamcrest-all:1.3"
+    testImplementation "android.arch.core:core-testing:1.1.1"
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.3.3"
+    androidTestImplementation 'androidx.test:runner:1.2.0'
+    androidTestImplementation 'androidx.test:rules:1.2.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    androidTestImplementation "org.mockito:mockito-core:2.25.0"
+    androidTestImplementation "com.linkedin.dexmaker:dexmaker-mockito:2.12.1"
+    androidTestImplementation('com.android.support.test.espresso:espresso-contrib:3.0.2') {
+        exclude group: 'com.android.support', module: 'appcompat'
+        exclude group: 'com.android.support', module: 'support-v4'
+        exclude module: 'recyclerview-v7'
+    }
+    androidTestImplementation "androidx.room:room-testing:2.2.5"
+    androidTestImplementation 'androidx.test:core:1.2.0'
+    androidTestImplementation "android.arch.core:core-testing:1.1.1"
+    //Debug
+    debugImplementation 'com.amitshekhar.android:debug-db:1.0.0'
+}
+
+def coverageSourceDirs = [
+        '../app/src/main/java'
+]
+
+task jacocoRootReport(type: JacocoReport, dependsOn: "testDebugUnitTest") {
+    group = "Reporting"
+    description = "Generate Jacoco coverage reports after running tests."
+
+    reports {
+        xml.enabled true
+        html.enabled true
+        csv.enabled true
+    }
+
+    // what to exclude from coverage report
+    // UI, "noise", generated classes, platform classes, etc.
+    def excludes = [
+            '**/R.class',
+            '**/R$*.class',
+            '**/*$InjectAdapter.class',
+            '**/*$ModuleAdapter.class',
+            '**/*$ViewInjector*.*',
+            '**/BuildConfig.*',
+            '**/Manifest*.*',
+            '**/*Test*.*',
+            'android/**/*.*'
+    ]
+    // generated classes
+    classDirectories = fileTree(
+            dir: "$buildDir/intermediates/classes/debug",
+            excludes: excludes
+    ) + fileTree(
+            dir: "$buildDir/tmp/kotlin-classes/debug",
+            excludes: excludes
+    ) + fileTree(
+            dir: "$buildDir/intermediates/javac/debug/classes",
+            excludes: excludes
+    )
+
+    // sources
+    sourceDirectories = files([
+            android.sourceSets.main.java.srcDirs,
+            "src/main/kotlin"
+    ])
+    executionData = files("$buildDir/jacoco/testDebugUnitTest.exec") //存储APP运行时产生报告的路径
+}
+detekt {
+    failFast = true // fail build on any finding
+    buildUponDefaultConfig = true // preconfigure defaults
+    config = files("$projectDir/detekt.yml")
+    // point to your custom config defining rules to run, overwriting default behavior
+    baseline = file("$projectDir/baseline.xml")
+    // a way of suppressing issues before introducing detekt
+
+    reports {
+        html.enabled = true // observe findings in your browser with structure and code snippets
+        xml.enabled = true // checkstyle like format mainly for integrations like Jenkins
+        txt.enabled = true
+        // similar to the console output, contains issue signature to manually edit baseline files
+    }
+}
+
+sonarqube {
+    properties {
+        property "sonar.projectName", "CAC"
+        property "sonar.projectKey", "BaseProject:CAC"
+        property "sonar.sourceEncoding", "UTF-8"
+        property "sonar.projectVersion", "1.0"
+        property "sonar.projectBaseDir", "."
+        property "sonar.sources", "./app/src/main/java"
+        property "sonar.branch.name", rootProject.getGitBranch()
+        property "sonar.java.binaries", "./app/build/intermediates/javac/debug/classes"
+        property "sonar.java.coveragePlugin", "jacoco"
+        property "sonar.jacoco.reportMissing.force.zero", false
+        property "sonar.coverage.jacoco.xmlReportPaths", "./app/build/reports/jacoco/jacocoRootReport/jacocoRootReport.xml"
+        property "sonar.kotlin.detekt.reportPaths", "./app/build/reports/detekt/detekt.xml"
+    }
+}
