@@ -165,8 +165,8 @@ detekt {
 
 sonarqube {
     properties {
-        property "sonar.projectName", "DEMO"
-        property "sonar.projectKey", "BaseProject:DEMO"
+        property "sonar.projectName", "CAC-DEMO"
+        property "sonar.projectKey", "CAC:DEMO"
         property "sonar.sourceEncoding", "UTF-8"
         property "sonar.projectVersion", "1.0"
         property "sonar.projectBaseDir", "."
